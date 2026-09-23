@@ -5,7 +5,7 @@ Infinite Yield rebuilt for the Matcha Lua VM. Same idea, different engine: a typ
 ## Load
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/OWNER/InfiniteMatcha/main/InfiniteMatcha.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/RedTree1222/InfiniteMatcha/main/InfiniteMatcha.lua"))()
 ```
 
 Press RightShift to toggle the bar. Prefix is `;`.

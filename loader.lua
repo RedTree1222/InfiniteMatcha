@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/OWNER/InfiniteMatcha/main/InfiniteMatcha.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/RedTree1222/InfiniteMatcha/main/InfiniteMatcha.lua"))()
