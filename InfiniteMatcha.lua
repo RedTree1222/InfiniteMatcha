@@ -1123,12 +1123,27 @@ InputConnection = UserInputService.InputBegan:Connect(function(InputTable)
                     CommandWindow.InputBox.Focused = true
                     return
                 end
+                if KeyCode == KeycodeTable.Semicolon then
+                    CommandWindow.InputBox.Focused = true
+                    CommandWindow.InputBox.SetText("")
+                    return
+                end
                 if KeyCode == KeycodeTable.Escape then
                     CommandWindow.Toggle()
                     return
                 end
                 return
             end
+        end
+        if KeyCode == KeycodeTable.Semicolon then
+            if CommandWindow then
+                if not CommandWindow.Visible then
+                    CommandWindow.Toggle()
+                end
+                CommandWindow.InputBox.Focused = true
+                CommandWindow.InputBox.SetText("")
+            end
+            return
         end
         if ToggleKeyOpen and KeyCode == ToggleKeyOpen then
             if CommandWindow then
@@ -2791,7 +2806,7 @@ local function Boot()
         CommandWindow.SuggestionList.Show()
         CommandWindow.InputBox.Focused = false
     end
-    Notify(ExecutableName, "loaded " .. InfiniteMatchaVersion .. ", rightshift toggles the bar, escape stops typing, ;cmds for the list", 7)
+    Notify(ExecutableName, "loaded " .. InfiniteMatchaVersion .. ", ; or rightshift to focus, escape stops typing, ;cmds for the list", 7)
 end
 
 Boot()
