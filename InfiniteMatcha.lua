@@ -15,7 +15,7 @@ if not PlayersReady then
     print("InfiniteMatcha: player list never resolved, run the script again")
     return
 end
-local InfiniteMatchaVersion = "1.0"
+local InfiniteMatchaVersion = "1.1"
 
 local CurrentPlayer = game:GetService("Players").LocalPlayer
 local PlayersService = game:GetService("Players")
@@ -575,9 +575,19 @@ end
 
 local CommandWindow = nil
 
+function InputCaptured()
+    if CommandWindow and CommandWindow.Visible and CommandWindow.InputBox and CommandWindow.InputBox.Focused then
+        return true
+    end
+    return false
+end
+
 function NewDrawingWindow(Position, Size, Text)
     local Window = {}
     Window.Visible = false
+    Window.Position = Position
+    Window.Size = Size
+    Window.Text = Text
     Window.Dragging = false
     Window.DragStart = nil
     Window.Background = DrawingFactory.Square(Position, Size)
@@ -1040,7 +1050,31 @@ function CommandSubmitted(RawText)
     end
 end
 
+local function SelfRoot()
+    return GetRootPart(CurrentPlayer)
+end
+
+local FreezeCFrame = nil
+
+local function HoldPositionWhileTyping()
+    if InputCaptured() and not FlyLoop then
+        local Root = SelfRoot()
+        if Root then
+            pcall(function()
+                if not FreezeCFrame then
+                    FreezeCFrame = Root.CFrame
+                end
+                Root.CFrame = FreezeCFrame
+                Root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end)
+        end
+    else
+        FreezeCFrame = nil
+    end
+end
+
 local function RenderFrame()
+    HoldPositionWhileTyping()
     if CommandWindow then
         CommandWindow.Frame()
         if CommandWindow.Visible then
@@ -1076,13 +1110,25 @@ InputConnection = UserInputService.InputBegan:Connect(function(InputTable)
         if BlockInput and KeyCode ~= KeycodeTable.RightShift and KeyCode ~= KeycodeTable.Escape then
             return
         end
-        if CommandWindow and CommandWindow.Visible and CommandWindow.InputBox.Focused then
-            if KeyCode == KeycodeTable.Escape then
-                CommandWindow.InputBox.Focused = false
+        if CommandWindow and CommandWindow.Visible then
+            if CommandWindow.InputBox.Focused then
+                if KeyCode == ToggleKeyOpen or KeyCode == KeycodeTable.Escape then
+                    CommandWindow.InputBox.Focused = false
+                    return
+                end
+                CommandWindow.InputBox.HandleSpecial(KeyCode)
+                return
+            else
+                if ToggleKeyOpen and KeyCode == ToggleKeyOpen then
+                    CommandWindow.InputBox.Focused = true
+                    return
+                end
+                if KeyCode == KeycodeTable.Escape then
+                    CommandWindow.Toggle()
+                    return
+                end
                 return
             end
-            CommandWindow.InputBox.HandleSpecial(KeyCode)
-            return
         end
         if ToggleKeyOpen and KeyCode == ToggleKeyOpen then
             if CommandWindow then
@@ -1190,10 +1236,6 @@ end
 
 local function CharacterSelf()
     return GetCharacter(CurrentPlayer)
-end
-
-local function SelfRoot()
-    return GetRootPart(CurrentPlayer)
 end
 
 local function SelfHumanoid()
@@ -1358,23 +1400,24 @@ local function RunFlyLoop()
                     return Root.CFrame
                 end)
                 if Ok and CurrentCFrame then
+                    local Captured = InputCaptured()
                     local Move = Vector3.new(0, 0, 0)
-                    if iskeypressed(KeycodeTable.W) then
+                    if not Captured and iskeypressed(KeycodeTable.W) then
                         Move = Move + Vector3.new(0, 0, -1)
                     end
-                    if iskeypressed(KeycodeTable.S) then
+                    if not Captured and iskeypressed(KeycodeTable.S) then
                         Move = Move + Vector3.new(0, 0, 1)
                     end
-                    if iskeypressed(KeycodeTable.A) then
+                    if not Captured and iskeypressed(KeycodeTable.A) then
                         Move = Move + Vector3.new(-1, 0, 0)
                     end
-                    if iskeypressed(KeycodeTable.D) then
+                    if not Captured and iskeypressed(KeycodeTable.D) then
                         Move = Move + Vector3.new(1, 0, 0)
                     end
-                    if iskeypressed(KeycodeTable.Space) then
+                    if not Captured and iskeypressed(KeycodeTable.Space) then
                         Move = Move + Vector3.new(0, 1, 0)
                     end
-                    if iskeypressed(KeycodeTable.LeftControl) then
+                    if not Captured and iskeypressed(KeycodeTable.LeftControl) then
                         Move = Move + Vector3.new(0, -1, 0)
                     end
                     if Move.Magnitude > 0 then
@@ -1417,7 +1460,7 @@ local function RunInfJump()
     InfJumpActive = true
     task.spawn(function()
         while InfJumpActive and not BailOut do
-            if iskeypressed(KeycodeTable.Space) and not JumpDebounce then
+            if iskeypressed(KeycodeTable.Space) and not JumpDebounce and not InputCaptured() then
                 local Humanoid = SelfHumanoid()
                 if Humanoid then
                     JumpDebounce = true
@@ -2733,12 +2776,22 @@ Commands.Cmd("unload", "", "same as exit", function()
 end, "Main")
 
 local function Boot()
+    if _G.InfiniteMatchaUnload then
+        pcall(_G.InfiniteMatchaUnload)
+        task.wait(0.1)
+    end
     BuildCommandWindow()
     PollKeyboard()
     _G.InfiniteMatchaVersion = InfiniteMatchaVersion
     _G.InfiniteMatchaUnload = DoUnload
     _G.InfiniteMatchaExec = CommandSubmitted
-    Notify(ExecutableName, "loaded " .. InfiniteMatchaVersion .. " on " .. ExecutorName .. ", press " .. Prefix .. " to open, ;cmds for the list", 7)
+    if CommandWindow then
+        CommandWindow.Show()
+        CommandWindow.InputBox.Show()
+        CommandWindow.SuggestionList.Show()
+        CommandWindow.InputBox.Focused = false
+    end
+    Notify(ExecutableName, "loaded " .. InfiniteMatchaVersion .. ", rightshift toggles the bar, escape stops typing, ;cmds for the list", 7)
 end
 
 Boot()
